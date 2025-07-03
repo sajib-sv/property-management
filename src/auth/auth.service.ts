@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@project/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -20,6 +16,7 @@ import {
 } from '@project/common/utils/response.util';
 import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
+import { SellerEntity } from '@project/common/entity/seller.entity';
 
 @Injectable()
 export class AuthService {
@@ -64,7 +61,7 @@ export class AuthService {
     );
   }
 
-  async userRegister(dto: RegisterUserDto) {
+  async userRegister(dto: RegisterUserDto): Promise<TResponse<UserEntity>> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -73,7 +70,10 @@ export class AuthService {
       throw new AppError('Email already registered', 400);
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await this.hashPassword(dto.password);
+
+    const otpAndExpiry = this.generateOtpAndExpiry();
+    const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
     const user = await this.prisma.user.create({
       data: {
@@ -84,15 +84,25 @@ export class AuthService {
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
-        otpCode: 123456,
-        otpExpireTime: new Date(),
+        otpCode: hashedOtp,
+        otpExpireTime: otpAndExpiry.expiryTime,
       },
     });
 
-    return { message: 'User registered successfully', data: user };
+    // * TODO: Send OTP to user's email
+
+    return successResponse(
+      plainToInstance(UserEntity, user),
+      'User registered successfully. Please verify your email with the OTP sent to your email address.',
+    );
   }
 
-  async sellerRegister(dto: RegisterSellerDto) {
+  async sellerRegister(dto: RegisterSellerDto): Promise<
+    TResponse<{
+      user: UserEntity;
+      seller: SellerEntity;
+    }>
+  > {
     // Create user first
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -102,7 +112,10 @@ export class AuthService {
       throw new BadRequestException('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await this.hashPassword(dto.password);
+
+    const otpAndExpiry = this.generateOtpAndExpiry();
+    const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
     const user = await this.prisma.user.create({
       data: {
@@ -113,8 +126,8 @@ export class AuthService {
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
-        otpCode: this.generateOtp(),
-        otpExpireTime: this.generateOtpExpiry(),
+        otpCode: hashedOtp,
+        otpExpireTime: otpAndExpiry.expiryTime,
       },
     });
 
@@ -137,10 +150,13 @@ export class AuthService {
 
     // * TODO: Send OTP to user's email
 
-    return {
-      message: 'Seller registered successfully',
-      data: { user, seller },
-    };
+    return successResponse(
+      {
+        user: plainToInstance(UserEntity, user),
+        seller: plainToInstance(SellerEntity, seller),
+      },
+      'User registered successfully. Please verify your email with the OTP sent to your email address.',
+    );
   }
 
   async verify(dto: VerifyOtpDto) {
@@ -148,14 +164,18 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new AppError('User not found', 404);
 
-    if (user.otpCode !== dto.otpCode) {
-      throw new BadRequestException('Invalid OTP code');
+    if (!user.otpCode) {
+      throw new AppError('OTP code not found for this user', 404);
+    }
+
+    if (!this.compareOtp(dto.otpCode, user.otpCode)) {
+      throw new AppError('Invalid OTP code', 400);
     }
 
     if (user.otpExpireTime < new Date()) {
-      throw new BadRequestException('OTP code has expired');
+      throw new AppError('OTP code has expired', 400);
     }
 
     const verifiedUser = await this.prisma.user.update({
@@ -163,21 +183,24 @@ export class AuthService {
       data: { isEmailVerified: true },
     });
 
-    return { message: 'Email verified successfully', data: verifiedUser };
+    return successResponse(
+      plainToInstance(UserEntity, verifiedUser),
+      'Email verified successfully',
+    );
   }
 
-  private generateOtp(): { otp: number; expiry: Date } {
+  private generateOtpAndExpiry(): { otp: number; expiryTime: Date } {
     const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit code
-    const expiry = new Date();
-    expiry.setMinutes(expiry.getMinutes() + 10);
-    return { otp, expiry };
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 10);
+    return { otp, expiryTime };
   }
 
   private hashOtp(otp: number): string {
     return bcrypt.hashSync(otp.toString(), 10);
   }
 
-  private compareOtp(inputOtp: number, storedOtp: number): boolean {
+  private compareOtp(inputOtp: number, storedOtp: string): boolean {
     return bcrypt.compareSync(inputOtp.toString(), storedOtp.toString());
   }
 
