@@ -11,6 +11,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterSellerDto } from './dto/register-seller.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { multerConfig } from '@project/common/utils/muliter-config.util';
 
 @Controller('auth')
 export class AuthController {
@@ -39,8 +40,8 @@ export class AuthController {
 
   // * This is just for testing file upload functionality
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    console.log(file);
+  @UseInterceptors(FileInterceptor('image', multerConfig))
+  async uploadProfileImage(@UploadedFile() file: Express.Multer.File) {
+    return this.authService.updateProfileImage(file.filename);
   }
 }

@@ -17,6 +17,7 @@ import {
 import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { SellerEntity } from '@project/common/entity/seller.entity';
+import { fileDestination } from '@project/common/utils/muliter-config.util';
 
 @Injectable()
 export class AuthService {
@@ -187,6 +188,14 @@ export class AuthService {
       plainToInstance(UserEntity, verifiedUser),
       'Email verified successfully',
     );
+  }
+
+  async updateProfileImage(filename: string) {
+    // * TODO: Replace with Prisma or DB update logic
+    return {
+      message: `Updated profile image for user `,
+      imageUrl: fileDestination + '/' + filename,
+    };
   }
 
   private generateOtpAndExpiry(): { otp: number; expiryTime: Date } {
