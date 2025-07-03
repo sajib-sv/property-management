@@ -220,12 +220,16 @@ export class AuthService {
     refreshToken: string;
   } {
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>(ENVEnum.JWT_SECRET),
-      expiresIn: this.configService.get<string>(ENVEnum.JWT_EXPIRES_IN),
+      secret: this.configService.get<string>(ENVEnum.JWT_ACCESS_TOKEN_SECRET),
+      expiresIn: this.configService.get<string>(
+        ENVEnum.JWT_ACCESS_TOKEN_EXPIRES_IN,
+      ),
     });
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>(ENVEnum.JWT_REFRESH_SECRET),
-      expiresIn: this.configService.get<string>(ENVEnum.JWT_REFRESH_EXPIRES_IN),
+      secret: this.configService.get<string>(ENVEnum.JWT_REFRESH_TOKEN_SECRET),
+      expiresIn: this.configService.get<string>(
+        ENVEnum.JWT_REFRESH_TOKEN_EXPIRES_IN,
+      ),
     });
     return { accessToken, refreshToken };
   }
