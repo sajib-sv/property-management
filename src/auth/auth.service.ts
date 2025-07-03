@@ -17,8 +17,8 @@ import {
 import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { SellerEntity } from '@project/common/entity/seller.entity';
-import { fileDestination } from '@project/common/utils/multer-config.util';
 import { HandleErrors } from '@project/common/error/handle-errors.decorator';
+import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +26,7 @@ export class AuthService {
     private configService: ConfigService,
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async login(dto: LoginDto): Promise<
@@ -85,14 +86,19 @@ export class AuthService {
     const otpAndExpiry = this.generateOtpAndExpiry();
     const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
-    // * TODO: upload image to cloud storage
+    const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+      image.buffer,
+      image.originalname,
+    );
+
+    const imageUrl = uploaded.secure_url;
 
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        image: image.filename,
+        image: imageUrl,
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
@@ -207,14 +213,6 @@ export class AuthService {
       plainToInstance(UserEntity, verifiedUser),
       'Email verified successfully',
     );
-  }
-
-  async updateProfileImage(filename: string) {
-    // * TODO: Replace with Prisma or DB update logic
-    return {
-      message: `Updated profile image for user `,
-      imageUrl: fileDestination + '/' + filename,
-    };
   }
 
   private generateOtpAndExpiry(): { otp: number; expiryTime: Date } {

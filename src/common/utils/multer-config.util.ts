@@ -1,9 +1,9 @@
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import path, { extname } from 'path';
 
 export const fileDestination = path.join(process.cwd(), 'uploads');
 
-export const multerConfig = {
+export const multerDiskConfig = {
   storage: diskStorage({
     destination: fileDestination,
     filename: (req, file, callback) => {
@@ -22,6 +22,20 @@ export const multerConfig = {
   ) => {
     console.info(`Request: ${req}`);
 
+    if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+      return callback(new Error('Only image files are allowed!'), false);
+    }
+    callback(null, true);
+  },
+};
+
+export const multerMemoryConfig = {
+  storage: memoryStorage(),
+  fileFilter: (
+    req: Express.Request,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
     if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
       return callback(new Error('Only image files are allowed!'), false);
     }

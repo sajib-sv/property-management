@@ -11,7 +11,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterSellerDto } from './dto/register-seller.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { multerConfig } from '@project/common/utils/multer-config.util';
+import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
 
 @Controller('auth')
 export class AuthController {
@@ -23,7 +23,7 @@ export class AuthController {
   }
 
   @Post('register/user')
-  @UseInterceptors(FileInterceptor('image', multerConfig))
+  @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
   userRegister(
     @UploadedFile() file: Express.Multer.File,
     @Body() registerUserDto: RegisterUserDto,
@@ -35,7 +35,7 @@ export class AuthController {
 
   // * first create a user, then create a seller under that user
   @Post('register/seller')
-  @UseInterceptors(FileInterceptor('image', multerConfig))
+  @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
   sellerRegister(
     @UploadedFile() file: Express.Multer.File,
     @Body() registerSellerDto: RegisterSellerDto,
@@ -48,12 +48,5 @@ export class AuthController {
   @Post('verify')
   verify(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verify(verifyOtpDto);
-  }
-
-  // * This is just for testing file upload functionality
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('image', multerConfig))
-  async uploadProfileImage(@UploadedFile() file: Express.Multer.File) {
-    return this.authService.updateProfileImage(file.filename);
   }
 }
