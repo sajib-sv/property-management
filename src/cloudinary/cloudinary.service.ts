@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ENVEnum } from '@project/common/enum/env.enum';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 @Injectable()
 export class CloudinaryService {
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {
+    cloudinary.config({
+      cloud_name: this.configService.get<string>(ENVEnum.CLOUDINARY_CLOUD_NAME),
+      api_key: this.configService.get<string>(ENVEnum.CLOUDINARY_API_KEY),
+      api_secret: this.configService.get<string>(ENVEnum.CLOUDINARY_API_SECRET),
+    });
+  }
 
   async uploadImageFromBuffer(
     fileBuffer: Buffer,
@@ -28,7 +30,6 @@ export class CloudinaryService {
           resolve(result as UploadApiResponse);
         },
       );
-
       Readable.from(fileBuffer).pipe(stream);
     });
   }
