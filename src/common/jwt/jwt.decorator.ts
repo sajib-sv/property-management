@@ -6,10 +6,10 @@ import {
 import { UserEnum } from '../enum/user.enum';
 import { UserRequest } from './jwt.interface';
 
-export const ROLE_KEY = 'role';
-export const Role = (...role: UserEnum[]) => SetMetadata(ROLE_KEY, role);
+export const ROLES_KEY = 'role';
+export const Roles = (...roles: UserEnum[]) => SetMetadata(ROLES_KEY, roles);
 
-export const User = createParamDecorator(
+export const GetUser = createParamDecorator(
   (key: string | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<UserRequest>();
     const user = request.user;

@@ -1,42 +1,91 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
+  Put,
   Patch,
-  Param,
   Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
+import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
+import { UserEnum } from '@project/common/enum/user.enum';
 
-@Controller('users')
+@Controller()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  // GET /profile
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@GetUser('userId') userId: string) {
+    return this.usersService.getProfile(userId);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  // PUT /profile
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  updateProfile(
+    @GetUser('userId') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(userId, dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  // PUT /profile/password
+  @UseGuards(JwtAuthGuard)
+  @Put('profile/password')
+  updatePassword(@Body() dto: UpdatePasswordDto) {
+    return this.usersService.updatePassword(dto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  // GET /admin/user/:id
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin)
+  @Get('admin/user/:id')
+  getUserByAdmin(@Param('id') id: string) {
+    return this.usersService.getUserByAdmin(id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  // GET /admin/sellers
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin)
+  @Get('admin/sellers')
+  getSellers(@Query() query: string) {
+    return this.usersService.getSellers(query);
+  }
+
+  // GET /admin/seller/:id
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin)
+  @Get('admin/seller/:id')
+  getSellerById(@Param('id') id: string) {
+    return this.usersService.getSellerById(id);
+  }
+
+  // DELETE /admin/seller/:id
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin)
+  @Delete('admin/seller/:id')
+  deleteSeller(@Param('id') id: string) {
+    return this.usersService.deleteSeller(id);
+  }
+
+  // PATCH /admin/seller/:id/status
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin)
+  @Patch('admin/seller/:id/status')
+  @HttpCode(200)
+  updateSellerStatus(
+    @Param('id') id: string,
+    @Body('isVerified') isVerified: 'approved' | 'rejected' | 'pending',
+  ) {
+    return this.usersService.updateSellerStatus(id, isVerified);
   }
 }

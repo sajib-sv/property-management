@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserEnum } from '../enum/user.enum';
-import { ROLE_KEY } from './jwt.decorator';
+import { ROLES_KEY } from './jwt.decorator';
 import { UserRequest } from './jwt.interface';
 
 // This guard checks if the user is authenticated using JWT
@@ -22,7 +22,7 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserEnum[]>(
-      ROLE_KEY,
+      ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
