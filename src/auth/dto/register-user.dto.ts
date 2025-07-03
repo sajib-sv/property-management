@@ -12,8 +12,8 @@ export class RegisterUserDto {
   @IsString()
   name: string;
 
-  @IsString()
-  image: string;
+  // @IsString()
+  // image: string;
 
   @IsString()
   language: string;

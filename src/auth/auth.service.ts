@@ -17,7 +17,8 @@ import {
 import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { SellerEntity } from '@project/common/entity/seller.entity';
-import { fileDestination } from '@project/common/utils/muliter-config.util';
+import { fileDestination } from '@project/common/utils/multer-config.util';
+import { HandleErrors } from '@project/common/error/handle-errors.decorator';
 
 @Injectable()
 export class AuthService {
@@ -62,7 +63,15 @@ export class AuthService {
     );
   }
 
-  async userRegister(dto: RegisterUserDto): Promise<TResponse<UserEntity>> {
+  @HandleErrors('Failed to register user')
+  async userRegister(
+    dto: RegisterUserDto,
+    image: Express.Multer.File | null = null,
+  ): Promise<TResponse<UserEntity>> {
+    if (!image) {
+      throw new AppError('Image file is required', 400);
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -76,12 +85,14 @@ export class AuthService {
     const otpAndExpiry = this.generateOtpAndExpiry();
     const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
+    // * TODO: upload image to cloud storage
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        image: dto.image,
+        image: image.filename,
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
@@ -123,7 +134,7 @@ export class AuthService {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        image: dto.image,
+        image: 'test',
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
