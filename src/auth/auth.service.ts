@@ -29,6 +29,7 @@ export class AuthService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
+  @HandleErrors('Failed to login user')
   async login(dto: LoginDto): Promise<
     TResponse<{
       user: UserEntity;
@@ -185,6 +186,7 @@ export class AuthService {
     );
   }
 
+  @HandleErrors('Failed to verify OTP')
   async verify(dto: VerifyOtpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
