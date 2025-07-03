@@ -49,7 +49,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin)
   @Get('admin/sellers')
-  getSellers(@Query() query: string) {
+  getSellers(@Query() query: { page?: number; limit?: number }) {
     return this.usersService.getSellers(query);
   }
 
@@ -76,7 +76,7 @@ export class UsersController {
   @HttpCode(200)
   updateSellerStatus(
     @Param('id') id: string,
-    @Body('isVerified') isVerified: 'approved' | 'rejected' | 'pending',
+    @Body('isVerified') isVerified: 'VERIFIED' | 'REJECTED' | 'PENDING',
   ) {
     return this.usersService.updateSellerStatus(id, isVerified);
   }

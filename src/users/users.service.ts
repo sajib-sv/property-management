@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@project/prisma/prisma.service';
 import {
   successResponse,
@@ -7,10 +7,14 @@ import {
 import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   async getProfile(userId: string): Promise<TResponse<UserEntity>> {
     const user = await this.prisma.user.findUnique({
@@ -24,47 +28,137 @@ export class UsersService {
       },
     });
 
+    if (!user) throw new NotFoundException('User not found');
+
     return successResponse(
       plainToInstance(UserEntity, user),
-      'User logged in successfully',
+      'User profile fetched successfully',
     );
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
-    // Placeholder: Update user profile
-    return { message: `Updated profile for user ${userId}`, data: dto };
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    image?: Express.Multer.File,
+  ): Promise<TResponse<UserEntity>> {
+    let updatedImage = null;
+    if (image) {
+      const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+        image.buffer,
+        image.originalname,
+      );
+
+      updatedImage = uploaded.secure_url;
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: dto.name,
+        email: dto.email,
+        // If image is provided, update it
+        ...(updatedImage && { image: updatedImage }),
+        language: dto.language,
+        seller: {
+          update: {
+            phone: dto.phone,
+            address: dto.address,
+            city: dto.city,
+            state: dto.state,
+            country: dto.country,
+            zip: dto.zip,
+            companyName: dto.companyName,
+            companyWebsite: dto.companyWebsite,
+            subscriptionType: dto.subscriptionType,
+            document: dto.document,
+          },
+        },
+      },
+    });
+
+    return successResponse(
+      plainToInstance(UserEntity, user),
+      'User profile updated successfully',
+    );
   }
 
   async getUserByAdmin(userId: string) {
-    // Placeholder: Admin fetches user by ID
-    return { message: `Admin fetched user ${userId}` };
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { seller: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return successResponse(user, 'User fetched successfully');
   }
 
-  async getSellers(query: any) {
-    // Placeholder: Return paginated sellers
+  async getSellers(query: { page?: number; limit?: number }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.seller.findMany({
+        skip,
+        take: limit,
+        include: {
+          user: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.seller.count(),
+    ]);
+
     return {
-      data: [],
-      total: 0,
-      page: query.page || 1,
-      limit: query.limit || 10,
+      data,
+      total,
+      page,
+      limit,
     };
   }
 
   async getSellerById(sellerId: string) {
-    // Placeholder: Fetch a seller by ID
-    return { message: `Fetched seller ${sellerId}` };
+    const seller = await this.prisma.seller.findUnique({
+      where: { id: sellerId },
+      include: {
+        user: true,
+        property: true,
+      },
+    });
+
+    if (!seller) throw new NotFoundException('Seller not found');
+
+    return successResponse(seller, 'Seller fetched successfully');
   }
 
   async deleteSeller(sellerId: string) {
-    // Placeholder: Delete a seller by ID
-    return { message: `Deleted seller ${sellerId}` };
+    const seller = await this.prisma.seller.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller) throw new NotFoundException('Seller not found');
+
+    await this.prisma.seller.delete({
+      where: { id: sellerId },
+    });
+
+    return { message: `Seller ${sellerId} deleted successfully` };
   }
 
   async updateSellerStatus(
     sellerId: string,
-    isVerified: 'approved' | 'rejected' | 'pending',
+    status: 'VERIFIED' | 'REJECTED' | 'PENDING',
   ) {
-    // Placeholder: Update seller verification status
-    return { message: `Seller ${sellerId} status updated to ${isVerified}` };
+    const seller = await this.prisma.seller.update({
+      where: { id: sellerId },
+      data: {
+        verificationStatus: status,
+      },
+    });
+
+    return successResponse(seller, `Seller status updated to ${status}`);
   }
 }
