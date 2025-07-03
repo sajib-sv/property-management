@@ -4,6 +4,8 @@ import {
   Body,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -12,6 +14,8 @@ import { RegisterSellerDto } from './dto/register-seller.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
+import { JwtAuthGuard } from '@project/common/jwt/jwt.guard';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -48,5 +52,11 @@ export class AuthController {
   @Post('verify')
   verify(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verify(verifyOtpDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('password')
+  updatePassword(@Body() dto: UpdatePasswordDto) {
+    return this.authService.updatePassword(dto);
   }
 }

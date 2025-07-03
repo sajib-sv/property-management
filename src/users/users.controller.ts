@@ -12,12 +12,11 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
 
-@Controller()
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -36,13 +35,6 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(userId, dto);
-  }
-
-  // PUT /profile/password
-  @UseGuards(JwtAuthGuard)
-  @Put('profile/password')
-  updatePassword(@Body() dto: UpdatePasswordDto) {
-    return this.usersService.updatePassword(dto);
   }
 
   // GET /admin/user/:id

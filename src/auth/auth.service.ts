@@ -19,6 +19,7 @@ import { plainToInstance } from 'class-transformer';
 import { SellerEntity } from '@project/common/entity/seller.entity';
 import { HandleErrors } from '@project/common/error/handle-errors.decorator';
 import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -144,12 +145,19 @@ export class AuthService {
     const otpAndExpiry = this.generateOtpAndExpiry();
     const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
+    const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+      image.buffer,
+      image.originalname,
+    );
+
+    const imageUrl = uploaded.secure_url;
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        image: 'test',
+        image: imageUrl,
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
@@ -214,6 +222,36 @@ export class AuthService {
     return successResponse(
       plainToInstance(UserEntity, verifiedUser),
       'Email verified successfully',
+    );
+  }
+
+  @HandleErrors('Failed to update password')
+  async updatePassword(dto: UpdatePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) throw new AppError('User not found', 404);
+
+    const isPasswordValid = await this.comparePasswords(
+      dto.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new AppError('Invalid old password', 400);
+    }
+
+    const hashedPassword = await this.hashPassword(dto.newPassword);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { email: dto.email },
+      data: { password: hashedPassword },
+    });
+
+    return successResponse(
+      plainToInstance(UserEntity, updatedUser),
+      'Password updated successfully',
     );
   }
 

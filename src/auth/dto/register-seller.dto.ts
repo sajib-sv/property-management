@@ -1,6 +1,7 @@
 import { IsEnum, IsOptional, IsString, IsInt } from 'class-validator';
 import { SubscriptionType } from '@prisma/client';
 import { RegisterUserDto } from './register-user.dto';
+import { Type } from 'class-transformer';
 
 export class RegisterSellerDto extends RegisterUserDto {
   @IsString()
@@ -13,6 +14,7 @@ export class RegisterSellerDto extends RegisterUserDto {
   @IsString()
   companyWebsite: string;
 
+  @Type(() => Number)
   @IsInt()
   phone: number;
 

@@ -1,22 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { PrismaService } from '@project/prisma/prisma.service';
+import {
+  successResponse,
+  TResponse,
+} from '@project/common/utils/response.util';
+import { UserEntity } from '@project/common/entity/user.entity';
+import { plainToInstance } from 'class-transformer';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
-  async getProfile(userId: string) {
-    // Placeholder: Fetch user profile by userId
-    return { message: `Profile for user ${userId}` };
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getProfile(userId: string): Promise<TResponse<UserEntity>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        seller: {
+          include: {
+            property: true,
+          },
+        },
+      },
+    });
+
+    return successResponse(
+      plainToInstance(UserEntity, user),
+      'User logged in successfully',
+    );
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     // Placeholder: Update user profile
     return { message: `Updated profile for user ${userId}`, data: dto };
-  }
-
-  async updatePassword(dto: UpdatePasswordDto) {
-    // Placeholder: Update user password logic
-    return { message: `Password updated for ${dto.email}` };
   }
 
   async getUserByAdmin(userId: string) {
