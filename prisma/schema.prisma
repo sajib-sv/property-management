@@ -6,3 +6,113 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id              String      @id @default(uuid())
+  image           String
+  name            String
+  email           String      @unique
+  password        String
+  language        String
+  accountType     AccountType
+  isEmailVerified Boolean
+  otpCode         Int
+  otpExpireTime   DateTime
+
+  savedProperties PropertySaved[]
+  seller          Seller?
+}
+
+model Seller {
+  id                 String                   @id @default(uuid())
+  userId             String                   @unique
+  verificationStatus SellerVerificationStatus
+  companyName        String
+  subscriptionType   SubscriptionType?
+  companyWebsite     String
+  phone              Int
+  address            String
+  country            String
+  state              String
+  city               String
+  zip                String
+  document           String
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property[]
+}
+
+model Property {
+  id        String   @id @default(uuid())
+  sellerId  String
+  images    String[]
+  title     String
+  category  String
+  updatedAt DateTime
+  views     Int
+  price     Float
+  features  String[]
+  address   String
+  state     String
+  city      String
+  zip       String
+
+  seller  Seller          @relation(fields: [sellerId], references: [id])
+  savedBy PropertySaved[]
+}
+
+model PropertySaved {
+  id         String @id @default(uuid())
+  propertyId String
+  userId     String
+
+  property Property @relation(fields: [propertyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([propertyId, userId])
+}
+
+model News {
+  id               String   @id @default(uuid())
+  title            String
+  thumbnail        String
+  location         String
+  content          Json
+  firstPublishedAt DateTime
+  isPublished      Boolean
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Contact {
+  id      String @id @default(uuid())
+  name    String
+  email   String
+  country String
+  phone   Int
+  message String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isRead    Boolean  @default(false)
+}
+
+enum AccountType {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum SellerVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum SubscriptionType {
+  FREE
+  BASIC
+  PREMIUM
+}
