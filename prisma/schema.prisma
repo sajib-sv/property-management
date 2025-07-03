@@ -16,7 +16,7 @@ model User {
   language        String
   accountType     AccountType
   isEmailVerified Boolean
-  otpCode         String
+  otpCode         String?
   otpExpireTime   DateTime
 
   savedProperties PropertySaved[]

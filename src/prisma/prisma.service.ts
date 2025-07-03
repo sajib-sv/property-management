@@ -40,6 +40,8 @@ export class PrismaService
   }
 
   async onModuleInit() {
+    // await this.$executeRaw`DISCARD ALL`;
+
     await this.$connect();
   }
 
