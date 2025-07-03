@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ENVEnum } from '@project/common/enum/env.enum';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import path from 'path';
 import { Readable } from 'stream';
 
 @Injectable()
@@ -20,10 +21,12 @@ export class CloudinaryService {
     folder = 'profile-images',
   ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
+      const originalNameWithoutExt = path.parse(filename).name;
+
       const stream = cloudinary.uploader.upload_stream(
         {
           folder,
-          public_id: filename,
+          public_id: originalNameWithoutExt,
         },
         (error, result) => {
           if (error) return reject(error);
