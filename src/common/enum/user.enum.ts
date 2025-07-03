@@ -1,5 +1,5 @@
 export enum UserEnum {
   User = 'USER',
-  Admin = 'ADMIN',
-  Moderator = 'MODERATOR',
+  Buyer = 'BUYER',
+  Seller = 'SELLER',
 }

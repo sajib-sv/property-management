@@ -6,7 +6,7 @@ export interface RequestWithUser extends Request {
 }
 
 export interface UserTokenPayload {
-  roles: UserEnum[];
+  role: UserEnum[];
   email: string;
   userId: string;
   [key: string]: unknown;

@@ -6,10 +6,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { errorResponse } from '../utils/response.util';
+import { errorResponse } from './response.util';
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
+export class CustomExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
