@@ -9,22 +9,59 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterSellerDto } from './dto/register-seller.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import * as bcrypt from 'bcrypt';
+import { AppError } from '@project/common/error/handle-errors.app';
+import { JWTPayload } from '@project/common/jwt/jwt.interface';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { ENVEnum } from '@project/common/enum/env.enum';
+import {
+  successResponse,
+  TResponse,
+} from '@project/common/utils/response.util';
+import { UserEntity } from '@project/common/entity/user.entity';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<
+    TResponse<{
+      user: UserEntity;
+      tokens: { accessToken: string; refreshToken: string };
+    }>
+  > {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
-    if (!user) throw new NotFoundException('User not found');
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!user) throw new AppError('User not found', 404);
+    const isPasswordValid = await this.comparePasswords(
+      dto.password,
+      user.password,
+    );
 
-    if (!isPasswordValid) throw new BadRequestException('Invalid credentials');
+    if (!isPasswordValid) throw new AppError('Invalid credentials', 401);
 
-    return { message: 'User logged in successfully', data: user };
+    const tokens = this.generateJwtTokens({
+      sub: user.id,
+      email: user.email,
+      role: user.accountType,
+    });
+
+    const plainUser = plainToInstance(UserEntity, user);
+
+    return successResponse(
+      {
+        user: plainUser,
+        tokens,
+      },
+      'User logged in successfully',
+    );
   }
 
   async userRegister(dto: RegisterUserDto) {
@@ -33,7 +70,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('Email already registered');
+      throw new AppError('Email already registered', 400);
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -47,8 +84,8 @@ export class AuthService {
         language: dto.language,
         accountType: dto.accountType,
         isEmailVerified: false,
-        otpCode: this.generateOtp(),
-        otpExpireTime: this.generateOtpExpiry(),
+        otpCode: 123456,
+        otpExpireTime: new Date(),
       },
     });
 
@@ -98,6 +135,8 @@ export class AuthService {
       },
     });
 
+    // * TODO: Send OTP to user's email
+
     return {
       message: 'Seller registered successfully',
       data: { user, seller },
@@ -127,13 +166,44 @@ export class AuthService {
     return { message: 'Email verified successfully', data: verifiedUser };
   }
 
-  private generateOtp(): number {
-    return Math.floor(100000 + Math.random() * 900000); // 6-digit code
-  }
-
-  private generateOtpExpiry(): Date {
+  private generateOtp(): { otp: number; expiry: Date } {
+    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit code
     const expiry = new Date();
     expiry.setMinutes(expiry.getMinutes() + 10);
-    return expiry;
+    return { otp, expiry };
+  }
+
+  private hashOtp(otp: number): string {
+    return bcrypt.hashSync(otp.toString(), 10);
+  }
+
+  private compareOtp(inputOtp: number, storedOtp: number): boolean {
+    return bcrypt.compareSync(inputOtp.toString(), storedOtp.toString());
+  }
+
+  private comparePasswords(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  private hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
+
+  private generateJwtTokens(payload: JWTPayload): {
+    accessToken: string;
+    refreshToken: string;
+  } {
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>(ENVEnum.JWT_SECRET),
+      expiresIn: this.configService.get<string>(ENVEnum.JWT_EXPIRES_IN),
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>(ENVEnum.JWT_REFRESH_SECRET),
+      expiresIn: this.configService.get<string>(ENVEnum.JWT_REFRESH_EXPIRES_IN),
+    });
+    return { accessToken, refreshToken };
   }
 }

@@ -19,14 +19,26 @@ export function simplifyError(
         throw new ConflictException(`${record} already exists`);
       case 'P2025':
         throw new NotFoundException(`${record} not found`);
+      case 'P2003':
+        throw new BadRequestException(
+          `Cannot delete ${record} as it is referenced by another record`,
+        );
+      case 'P2004':
+        throw new BadRequestException(
+          `Invalid input for ${record}. Please check your data.`,
+        );
     }
   }
 
   if (error instanceof AppError) {
     switch (error.statusCode) {
+      case 300:
+        throw new ConflictException(error.message);
       case 400:
         throw new BadRequestException(error.message);
       case 401:
+        throw new UnauthorizedException(error.message);
+      case 403:
         throw new UnauthorizedException(error.message);
       case 404:
         throw new NotFoundException(error.message);
