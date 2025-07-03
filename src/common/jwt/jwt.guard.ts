@@ -1,3 +1,4 @@
+import { AuthGuard } from '@nestjs/passport';
 import {
   CanActivate,
   ExecutionContext,
@@ -6,25 +7,31 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserEnum } from '../enum/user.enum';
-import { ROLES_KEY } from './jwt-roles.decorator';
-import { RequestWithUser } from './jwt-user.interface';
+import { ROLE_KEY } from './jwt.decorator';
+import { UserRequest } from './jwt.interface';
 
+// This guard checks if the user is authenticated using JWT
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+
+// This guard checks if the user has the required roles
+// It uses the ROLES_KEY to get the required roles from the route handler or class
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserEnum[]>(
-      ROLES_KEY,
+      ROLE_KEY,
       [context.getHandler(), context.getClass()],
     );
 
     if (!requiredRoles) return true;
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const request = context.switchToHttp().getRequest<UserRequest>();
     const user = request.user;
 
-    if (!user?.roles) {
+    if (!user?.role) {
       throw new ForbiddenException('User roles not found');
     }
 
