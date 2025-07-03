@@ -109,12 +109,20 @@ export class AuthService {
     );
   }
 
-  async sellerRegister(dto: RegisterSellerDto): Promise<
+  @HandleErrors('Failed to register user')
+  async sellerRegister(
+    dto: RegisterSellerDto,
+    image: Express.Multer.File,
+  ): Promise<
     TResponse<{
       user: UserEntity;
       seller: SellerEntity;
     }>
   > {
+    if (!image) {
+      throw new AppError('Image file is required', 400);
+    }
+
     // Create user first
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },

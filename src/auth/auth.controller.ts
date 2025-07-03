@@ -35,8 +35,14 @@ export class AuthController {
 
   // * first create a user, then create a seller under that user
   @Post('register/seller')
-  sellerRegister(@Body() registerSellerDto: RegisterSellerDto) {
-    return this.authService.sellerRegister(registerSellerDto);
+  @UseInterceptors(FileInterceptor('image', multerConfig))
+  sellerRegister(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() registerSellerDto: RegisterSellerDto,
+  ) {
+    const image = file ?? null;
+
+    return this.authService.sellerRegister(registerSellerDto, image);
   }
 
   @Post('verify')
