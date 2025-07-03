@@ -6,9 +6,11 @@ import 'reflect-metadata';
 import { AppModule } from './app.module';
 import { ENVEnum } from './common/enum/env.enum';
 import { CustomExceptionsFilter } from './common/utils/exception-filter.util';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   app.useGlobalPipes(
@@ -20,6 +22,8 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new CustomExceptionsFilter());
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'));
 
   // * Swagger config
   const config = new DocumentBuilder()
