@@ -20,6 +20,7 @@ import { SellerEntity } from '@project/common/entity/seller.entity';
 import { HandleErrors } from '@project/common/error/handle-errors.decorator';
 import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { MailService } from '@project/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
+    private mailService: MailService,
   ) {}
 
   @HandleErrors('Failed to login user')
@@ -109,6 +111,14 @@ export class AuthService {
       },
     });
 
+    // * send OTP to user's email
+    const mailTemplate = `<p>Your OTP code is: <strong>${otpAndExpiry.otp}</strong></p>`;
+    await this.mailService.sendEmail(
+      user.email,
+      'Email Verification OTP',
+      mailTemplate,
+    );
+
     return successResponse(
       plainToInstance(UserEntity, user),
       'User registered successfully. Please verify your email with the OTP sent to your email address.',
@@ -181,7 +191,12 @@ export class AuthService {
       },
     });
 
-    // * TODO: Send OTP to user's email
+    const mailTemplate = `<p>Your OTP code is: <strong>${otpAndExpiry.otp}</strong></p>`;
+    await this.mailService.sendEmail(
+      user.email,
+      'Email Verification OTP',
+      mailTemplate,
+    );
 
     return successResponse(
       {

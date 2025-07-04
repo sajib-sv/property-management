@@ -19,6 +19,8 @@ export class LoggerMiddleware implements NestMiddleware {
     const { method, originalUrl, headers } = req;
     const body = req.body as unknown;
     const cookies = req.cookies as unknown;
+    const query = req.query as unknown;
+    const params = req.params as unknown;
 
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
 
@@ -35,6 +37,12 @@ export class LoggerMiddleware implements NestMiddleware {
     );
     console.info(
       `${chalk.red('🍪 Cookies:')} ${chalk.gray(safeStringify(cookies))}`,
+    );
+    console.info(
+      `${chalk.gray('🔍 Query:')} ${chalk.gray(safeStringify(query))}`,
+    );
+    console.info(
+      `${chalk.gray('🔑 Params:')} ${chalk.gray(safeStringify(params))}`,
     );
 
     console.groupEnd();
