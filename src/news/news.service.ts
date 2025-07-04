@@ -111,26 +111,85 @@ export class NewsService {
     );
   }
 
-  async update(id: string, updateNewsDto: UpdateNewsDto) {
-    // Implement logic to update a news article
-    return { id, ...updateNewsDto };
+  @HandleErrors('Error updating news')
+  async update(
+    id: string,
+    updateNewsDto: UpdateNewsDto,
+    image?: Express.Multer.File,
+  ): Promise<TResponse<NewsEntity>> {
+    const existing = await this.prisma.news.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError('News not found', 404);
+    }
+
+    let thumbnailUrl = existing.thumbnail;
+
+    if (image) {
+      const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+        image.buffer,
+        image.originalname,
+      );
+      thumbnailUrl = uploaded.secure_url;
+    }
+
+    const updated = await this.prisma.news.update({
+      where: { id },
+      data: {
+        ...updateNewsDto,
+        thumbnail: thumbnailUrl,
+      },
+    });
+
+    return successResponse(
+      plainToInstance(NewsEntity, updated),
+      'News updated successfully',
+    );
   }
 
+  @HandleErrors('Error updating news status')
   async updateStatus(id: string, isPublished: boolean) {
-    // Implement logic to update the published status of a news article
-    return { id, isPublished };
+    const existing = await this.prisma.news.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError('News not found', 404);
+    }
+
+    const updated = await this.prisma.news.update({
+      where: { id },
+      data: { isPublished },
+    });
+
+    return successResponse(
+      plainToInstance(NewsEntity, updated),
+      'News status updated successfully',
+    );
   }
 
+  @HandleErrors('Error deleting news')
   async remove(id: string) {
-    // Implement logic to remove a news article
-    return { id, deleted: true };
+    const existing = await this.prisma.news.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError('News not found', 404);
+    }
+
+    await this.prisma.news.delete({ where: { id } });
+
+    return successResponse(null, 'News deleted successfully');
   }
 
+  @HandleErrors('Error fetching recent news')
   async getRecent() {
-    // Implement logic to fetch recent news articles
-    return [
-      { id: 3, title: 'Recent News 1' },
-      { id: 4, title: 'Recent News 2' },
-    ];
+    const recent = await this.prisma.news.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    if (!recent.length) {
+      throw new AppError('No recent news found', 204);
+    }
+
+    return successResponse(
+      plainToInstance(NewsEntity, recent),
+      'Recent news fetched successfully',
+    );
   }
 }

@@ -48,6 +48,11 @@ export class NewsController {
     return this.newsService.findAll({ category, page, limit });
   }
 
+  @Get('recent')
+  async getRecent() {
+    return this.newsService.getRecent();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.newsService.findOneWithSuggestions(id);
@@ -67,14 +72,28 @@ export class NewsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNewsDto: UpdateNewsDto) {
-    return this.newsService.update(id, updateNewsDto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
+  @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
+  update(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() updateNewsDto: UpdateNewsDto,
+  ) {
+    const image = file ?? null;
+    return this.newsService.update(id, updateNewsDto, image);
   }
 
-  @Patch(':id/status')
+  @Patch('status/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
   updateStatus(@Param('id') id: string, @Body() body: IsPublishedDto) {
+    console.log(
+      'Updating status for news ID:',
+      id,
+      'to published:',
+      body.isPublished,
+    );
     return this.newsService.updateStatus(id, body.isPublished);
   }
 
@@ -83,14 +102,5 @@ export class NewsController {
   @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
   remove(@Param('id') id: string) {
     return this.newsService.remove(id);
-  }
-
-  @Get('recent')
-  @HttpCode(200)
-  async getRecent() {
-    const recent = await this.newsService.getRecent();
-    if (!recent.length)
-      return { statusCode: 204, message: 'No recent news found' };
-    return { statusCode: 200, data: recent };
   }
 }
