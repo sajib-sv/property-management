@@ -42,14 +42,21 @@ export class PropertiesController {
   }
 
   @Patch('seller/:id')
+  @UseInterceptors(FilesInterceptor('images', 10, multerMemoryConfig))
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Seller)
   updateProperty(
+    @UploadedFiles() files: Express.Multer.File[],
     @Param('id') id: string,
     @Body() updatePropertyDto: UpdatePropertyDto,
     @GetUser('userId') userId: string,
   ) {
-    return this.propertiesService.updateProperty(id, updatePropertyDto, userId);
+    return this.propertiesService.updateProperty(
+      id,
+      updatePropertyDto,
+      userId,
+      files,
+    );
   }
 
   @Delete('seller/:id')
@@ -92,7 +99,7 @@ export class PropertiesController {
     });
   }
 
-  @Get('properties/trending')
+  @Get('trending')
   getTrendingProperties(
     @Query('category') category?: PropertyCategory,
     @Query('limit') limit?: number,
@@ -100,12 +107,12 @@ export class PropertiesController {
     return this.propertiesService.getTrending(category, limit);
   }
 
-  @Get('property/:id')
+  @Get(':id')
   getPropertyDetails(@Param('id') id: string) {
     return this.propertiesService.findOne(id);
   }
 
-  @Post('property/save/:id')
+  @Post('save/:id')
   @UseGuards(JwtAuthGuard)
   saveProperty(
     @GetUser('userId') userId: string,

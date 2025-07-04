@@ -75,6 +75,7 @@ export class NewsService {
     );
   }
 
+  @HandleErrors('Error fetching news')
   async findOneWithSuggestions(id: string) {
     const news = await this.prisma.news.findUnique({
       where: { id },
@@ -100,6 +101,7 @@ export class NewsService {
     );
   }
 
+  @HandleErrors('Error fetching news')
   async findByCategory(
     category: NewsCategory,
     options: { page: number; limit: number },

@@ -7,6 +7,7 @@ import { successResponse } from '@project/common/utils/response.util';
 import { AppError } from '@project/common/error/handle-errors.app';
 import { PropertyCategory } from '@prisma/client';
 import { subDays } from 'date-fns';
+import { HandleErrors } from '@project/common/error/handle-errors.decorator';
 
 @Injectable()
 export class PropertiesService {
@@ -15,6 +16,7 @@ export class PropertiesService {
     private readonly prisma: PrismaService,
   ) {}
 
+  @HandleErrors()
   async createProperty(
     createPropertyDto: CreatePropertyDto,
     userId: string,
@@ -54,15 +56,56 @@ export class PropertiesService {
     return successResponse(result, 'Property created successfully');
   }
 
+  @HandleErrors()
   async updateProperty(
     id: string,
     updatePropertyDto: UpdatePropertyDto,
     userId: string,
+    files: Express.Multer.File[] = [],
   ) {
-    // Simulate property update
-    return { id, ...updatePropertyDto, sellerId: userId };
+    // Find property
+    const property = await this.prisma.property.findUnique({ where: { id } });
+    if (!property) {
+      throw new AppError('Property not found', 404);
+    }
+
+    // Check seller
+    const seller = await this.prisma.seller.findUnique({ where: { userId } });
+    if (!seller) {
+      throw new AppError('Seller not found', 404);
+    }
+    if (property.sellerId !== seller.id) {
+      throw new AppError('Unauthorized', 403);
+    }
+
+    let images = property.images || [];
+    if (files && files.length > 0) {
+      // Upload new images and merge with existing
+      const uploadedImages = await Promise.all(
+        files.map(async (file) => {
+          const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+            file.buffer,
+            file.originalname,
+            'properties',
+          );
+          return uploaded.secure_url;
+        }),
+      );
+      images = [...images, ...uploadedImages];
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id },
+      data: {
+        ...updatePropertyDto,
+        images,
+      },
+    });
+
+    return successResponse(updated, 'Property updated successfully');
   }
 
+  @HandleErrors('Property not found', 'property')
   async deleteProperty(id: string, userId: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -88,6 +131,7 @@ export class PropertiesService {
     return successResponse(result, 'Property deleted successfully');
   }
 
+  @HandleErrors()
   async findBySellerId(sellerId: string) {
     const properties = await this.prisma.property.findMany({
       where: { sellerId },
@@ -96,6 +140,7 @@ export class PropertiesService {
     return successResponse(properties, 'Properties fetched successfully');
   }
 
+  @HandleErrors()
   async getSellerPortfolio(userId: string) {
     const profile = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -154,6 +199,7 @@ export class PropertiesService {
     return successResponse(properties, 'Properties fetched successfully');
   }
 
+  @HandleErrors()
   async getTrending(category?: PropertyCategory, limit?: number) {
     const properties = await this.prisma.property.findMany({
       where: {
@@ -171,6 +217,7 @@ export class PropertiesService {
     return successResponse(properties, 'Properties fetched successfully');
   }
 
+  @HandleErrors()
   async findOne(id: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -182,6 +229,7 @@ export class PropertiesService {
     return successResponse(property, 'Property fetched successfully');
   }
 
+  @HandleErrors()
   async saveProperty(propertyId: string, userId: string) {
     const property = await this.prisma.property.findUnique({
       where: { id: propertyId },
