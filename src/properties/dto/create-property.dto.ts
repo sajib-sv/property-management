@@ -1,25 +1,51 @@
-import { IsString, IsNotEmpty, IsArray, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsArray,
+  IsEnum,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { PropertyCategory } from '@prisma/client';
 
 export class CreatePropertyDto {
   @IsString()
   @IsNotEmpty()
   title: string;
 
+  @IsEnum(PropertyCategory)
+  category: PropertyCategory;
+
   @IsString()
   @IsNotEmpty()
-  category: string;
+  description: string;
 
   @IsNumber()
-  @IsNotEmpty()
+  @Type(() => Number)
   price: number;
 
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [value];
+      }
+    }
+    return value;
+  })
   features: string[];
 
   @IsString()
   @IsNotEmpty()
   address: string;
+
+  @IsString()
+  @IsNotEmpty()
+  country: string;
 
   @IsString()
   @IsNotEmpty()

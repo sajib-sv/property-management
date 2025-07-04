@@ -95,10 +95,11 @@ model Property {
   title       String
   category    PropertyCategory
   description String
-  views       Int
+  views       Int                 @default(0)
   price       Float
   features    String[]
   address     String
+  country     String
   state       String
   city        String
   zip         String

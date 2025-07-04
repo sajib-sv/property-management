@@ -74,7 +74,6 @@ export class UsersService {
             companyName: dto.companyName,
             companyWebsite: dto.companyWebsite,
             subscriptionType: dto.subscriptionType,
-            document: dto.document,
           },
         },
       },

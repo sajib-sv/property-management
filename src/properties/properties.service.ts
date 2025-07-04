@@ -2,16 +2,55 @@ import { Injectable } from '@nestjs/common';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { SavePropertyDto } from './dto/save-property.dto';
+import { PrismaService } from '@project/prisma/prisma.service';
+import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
+import { successResponse } from '@project/common/utils/response.util';
+import { AppError } from '@project/common/error/handle-errors.app';
 
 @Injectable()
 export class PropertiesService {
+  constructor(
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly prisma: PrismaService,
+  ) {}
+
   async createProperty(
     createPropertyDto: CreatePropertyDto,
     userId: string,
-    images: string[] = [],
+    files: Express.Multer.File[] = [],
   ) {
-    // Simulate property creation
-    return { id: Date.now(), ...createPropertyDto, sellerId: userId, images };
+    let images: string[] = [];
+    if (files && files.length > 0) {
+      images = await Promise.all(
+        files.map(async (file) => {
+          const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+            file.buffer,
+            file.originalname,
+            'properties',
+          );
+          return uploaded.secure_url;
+        }),
+      );
+    }
+
+    const seller = await this.prisma.seller.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!seller) {
+      throw new AppError('Seller not found', 404);
+    }
+
+    const result = await this.prisma.property.create({
+      data: {
+        ...createPropertyDto,
+        images,
+        sellerId: seller.id,
+      },
+    });
+
+    return successResponse(result, 'Property created successfully');
   }
 
   async updateProperty(

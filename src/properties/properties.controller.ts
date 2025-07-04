@@ -19,27 +19,25 @@ import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
 import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('properties')
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 
   @Post('seller')
+  @UseInterceptors(FilesInterceptor('images', 10, multerMemoryConfig))
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Seller)
-  @UseInterceptors(FileInterceptor('images', multerMemoryConfig))
   createProperty(
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() createPropertyDto: CreatePropertyDto,
     @GetUser('userId') userId: string,
-    @UploadedFiles() files: Express.Multer.File[] | null = null,
   ) {
-    const images = files?.map((file) => file.path) || [];
-
     return this.propertiesService.createProperty(
       createPropertyDto,
       userId,
-      images,
+      files,
     );
   }
 
