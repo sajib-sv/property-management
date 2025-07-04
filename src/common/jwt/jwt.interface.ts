@@ -1,22 +1,20 @@
 import { Request } from 'express';
 import { UserEnum } from '../enum/user.enum';
 
-export interface TokenPayload {
-  role: UserEnum[];
-  email: string;
+export interface JWTPayload {
   userId: string;
+  email: string;
+  role: string | UserEnum;
+}
+
+export interface RequestPayload extends JWTPayload {
   [key: string]: any; // * Allow additional properties
 }
 
 export interface UserRequest extends Request {
-  user?: TokenPayload;
+  user?: RequestPayload;
 }
 
-export interface JWTPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
 export interface JWTOptions {
   secret: string;
   expiresIn: string;

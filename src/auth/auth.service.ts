@@ -50,7 +50,7 @@ export class AuthService {
     if (!isPasswordValid) throw new AppError('Invalid credentials', 401);
 
     const tokens = this.generateJwtTokens({
-      sub: user.id,
+      userId: user.id,
       email: user.email,
       role: user.accountType,
     });

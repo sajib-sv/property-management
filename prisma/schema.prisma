@@ -89,8 +89,8 @@ model News {
   thumbnail        String
   location         String
   content          Json
-  firstPublishedAt DateTime
-  isPublished      Boolean
+  firstPublishedAt DateTime?
+  isPublished      Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
