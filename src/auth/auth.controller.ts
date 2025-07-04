@@ -16,46 +16,61 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
 import { JwtAuthGuard } from '@project/common/jwt/jwt.guard';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @ApiOperation({ summary: 'Login user' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
   @Post('register/user')
+  @ApiOperation({ summary: 'Register a regular user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: RegisterUserDto })
   @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
   userRegister(
     @UploadedFile() file: Express.Multer.File,
     @Body() registerUserDto: RegisterUserDto,
   ) {
     const image = file ?? null;
-
     return this.authService.userRegister(registerUserDto, image);
   }
 
-  // * first create a user, then create a seller under that user
   @Post('register/seller')
+  @ApiOperation({ summary: 'Register a seller' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: RegisterSellerDto })
   @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
   sellerRegister(
     @UploadedFile() file: Express.Multer.File,
     @Body() registerSellerDto: RegisterSellerDto,
   ) {
     const image = file ?? null;
-
     return this.authService.sellerRegister(registerSellerDto, image);
   }
 
   @Post('verify')
+  @ApiOperation({ summary: 'Verify OTP' })
   verify(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verify(verifyOtpDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put('password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update password (requires JWT)' })
   updatePassword(@Body() dto: UpdatePasswordDto) {
     return this.authService.updatePassword(dto);
   }
