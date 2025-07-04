@@ -88,12 +88,6 @@ export class NewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
   updateStatus(@Param('id') id: string, @Body() body: IsPublishedDto) {
-    console.log(
-      'Updating status for news ID:',
-      id,
-      'to published:',
-      body.isPublished,
-    );
     return this.newsService.updateStatus(id, body.isPublished);
   }
 
