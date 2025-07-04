@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@project/prisma/prisma.service';
 import {
   successResponse,
@@ -8,6 +8,8 @@ import { UserEntity } from '@project/common/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
+import { HandleErrors } from '@project/common/error/handle-errors.decorator';
+import { AppError } from '@project/common/error/handle-errors.app';
 
 @Injectable()
 export class UsersService {
@@ -16,6 +18,7 @@ export class UsersService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  @HandleErrors('Failed to fetch user profile')
   async getProfile(userId: string): Promise<TResponse<UserEntity>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -28,7 +31,7 @@ export class UsersService {
       },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new AppError('User not found', 404);
 
     return successResponse(
       plainToInstance(UserEntity, user),
@@ -36,10 +39,11 @@ export class UsersService {
     );
   }
 
+  @HandleErrors('Failed to update user profile')
   async updateProfile(
     userId: string,
     dto: UpdateProfileDto,
-    image?: Express.Multer.File,
+    image: Express.Multer.File,
   ): Promise<TResponse<UserEntity>> {
     let updatedImage = null;
     if (image) {
@@ -82,17 +86,25 @@ export class UsersService {
     );
   }
 
+  @HandleErrors('Failed to fetch user by admin')
   async getUserByAdmin(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { seller: true },
+      include: {
+        seller: {
+          include: {
+            property: true,
+          },
+        },
+      },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new AppError('User not found', 404);
 
     return successResponse(user, 'User fetched successfully');
   }
 
+  @HandleErrors('Failed to fetch sellers')
   async getSellers(query: { page?: number; limit?: number }) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
@@ -120,6 +132,7 @@ export class UsersService {
     };
   }
 
+  @HandleErrors('Failed to fetch seller by ID')
   async getSellerById(sellerId: string) {
     const seller = await this.prisma.seller.findUnique({
       where: { id: sellerId },
@@ -129,25 +142,27 @@ export class UsersService {
       },
     });
 
-    if (!seller) throw new NotFoundException('Seller not found');
+    if (!seller) throw new AppError('Seller not found', 404);
 
     return successResponse(seller, 'Seller fetched successfully');
   }
 
+  @HandleErrors('Failed to delete seller')
   async deleteSeller(sellerId: string) {
     const seller = await this.prisma.seller.findUnique({
       where: { id: sellerId },
     });
 
-    if (!seller) throw new NotFoundException('Seller not found');
+    if (!seller) throw new AppError('Seller not found', 404);
 
     await this.prisma.seller.delete({
       where: { id: sellerId },
     });
 
-    return { message: `Seller ${sellerId} deleted successfully` };
+    return successResponse(seller, 'Seller deleted successfully');
   }
 
+  @HandleErrors('Failed to update seller status')
   async updateSellerStatus(
     sellerId: string,
     status: 'VERIFIED' | 'REJECTED' | 'PENDING',

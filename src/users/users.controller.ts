@@ -9,12 +9,16 @@ import {
   Query,
   UseGuards,
   HttpCode,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
+import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
@@ -30,11 +34,15 @@ export class UsersController {
   // PUT /profile
   @UseGuards(JwtAuthGuard)
   @Put('profile')
+  @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
   updateProfile(
     @GetUser('userId') userId: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdateProfileDto,
   ) {
-    return this.usersService.updateProfile(userId, dto);
+    const image = file ?? null;
+
+    return this.usersService.updateProfile(userId, dto, image);
   }
 
   // GET /admin/user/:id
