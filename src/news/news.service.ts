@@ -1,12 +1,54 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
+import { AppError } from '@project/common/error/handle-errors.app';
+import { PrismaService } from '@project/prisma/prisma.service';
+import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
+import { HandleErrors } from '@project/common/error/handle-errors.decorator';
+import {
+  successResponse,
+  TResponse,
+} from '@project/common/utils/response.util';
+import { NewsEntity } from './entities/news.entity';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class NewsService {
-  async create(createNewsDto: CreateNewsDto) {
-    // Implement logic to create a news article
-    return { ...createNewsDto, id: Date.now() };
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
+
+  @HandleErrors('Error creating news')
+  async create(
+    createNewsDto: CreateNewsDto,
+    image: Express.Multer.File,
+  ): Promise<TResponse<NewsEntity>> {
+    if (!image) {
+      throw new AppError('Image file is required', 400);
+    }
+
+    const uploaded = await this.cloudinaryService.uploadImageFromBuffer(
+      image.buffer,
+      image.originalname,
+    );
+
+    const imageUrl = uploaded.secure_url;
+
+    const data = {
+      ...createNewsDto,
+      thumbnail: imageUrl,
+    };
+    console.info(data);
+
+    const news = await this.prisma.news.create({
+      data,
+    });
+
+    return successResponse(
+      plainToInstance(NewsEntity, news),
+      'News created successfully',
+    );
   }
 
   async findAll(params: { category?: string; page: number; limit: number }) {

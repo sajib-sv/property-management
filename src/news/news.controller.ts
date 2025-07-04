@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   HttpCode,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { NewsService } from './news.service';
 import { CreateNewsDto } from './dto/create-news.dto';
@@ -17,6 +19,8 @@ import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { IsPublishedDto } from './dto/is-published.dto';
 import { Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
 
 @Controller('news')
 export class NewsController {
@@ -25,8 +29,14 @@ export class NewsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
-  create(@Body() createNewsDto: CreateNewsDto) {
-    return this.newsService.create(createNewsDto);
+  @UseInterceptors(FileInterceptor('image', multerMemoryConfig))
+  create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createNewsDto: CreateNewsDto,
+  ) {
+    const image = file ?? null;
+
+    return this.newsService.create(createNewsDto, image);
   }
 
   @Get()

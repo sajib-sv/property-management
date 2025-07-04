@@ -1,21 +1,12 @@
-import { IsString, IsBoolean, IsDateString, IsJSON } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateNewsDto {
   @IsString()
   title: string;
 
   @IsString()
-  thumbnail: string;
-
-  @IsString()
   location: string;
 
-  @IsJSON()
-  content: JSON;
-
-  @IsDateString()
-  firstPublishedAt: string;
-
-  @IsBoolean()
-  isPublished: boolean;
+  @IsOptional() // * Marks it as "allowed" to be omitted
+  content: any; // * Use 'any' to allow any JSON structure
 }
