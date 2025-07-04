@@ -8,12 +8,14 @@ import { ENVEnum } from '@project/common/enum/env.enum';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { CloudinaryModule } from '@project/cloudinary/cloudinary.module';
+import { ResendModule } from '@project/resend/resend.module';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
     CloudinaryModule,
+    ResendModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
