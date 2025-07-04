@@ -14,12 +14,12 @@ import {
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { SavePropertyDto } from './dto/save-property.dto';
 import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
 import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { PropertyCategory } from '@prisma/client';
 
 @Controller('properties')
 export class PropertiesController {
@@ -75,7 +75,7 @@ export class PropertiesController {
 
   @Get('properties')
   getAllProperties(
-    @Query('category') category?: string,
+    @Query('category') category?: PropertyCategory,
     @Query('search') search?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
@@ -94,7 +94,7 @@ export class PropertiesController {
 
   @Get('properties/trending')
   getTrendingProperties(
-    @Query('category') category?: string,
+    @Query('category') category?: PropertyCategory,
     @Query('limit') limit?: number,
   ) {
     return this.propertiesService.getTrending(category, limit);
@@ -105,12 +105,12 @@ export class PropertiesController {
     return this.propertiesService.findOne(id);
   }
 
-  @Post('property/save')
+  @Post('property/save/:id')
   @UseGuards(JwtAuthGuard)
   saveProperty(
-    @Body() body: SavePropertyDto,
     @GetUser('userId') userId: string,
+    @Param('id') propertyId: string,
   ) {
-    return this.propertiesService.saveProperty(body, userId);
+    return this.propertiesService.saveProperty(propertyId, userId);
   }
 }

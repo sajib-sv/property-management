@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { SavePropertyDto } from './dto/save-property.dto';
 import { PrismaService } from '@project/prisma/prisma.service';
 import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
 import { successResponse } from '@project/common/utils/response.util';
 import { AppError } from '@project/common/error/handle-errors.app';
+import { PropertyCategory } from '@prisma/client';
+import { subDays } from 'date-fns';
 
 @Injectable()
 export class PropertiesService {
@@ -63,44 +64,146 @@ export class PropertiesService {
   }
 
   async deleteProperty(id: string, userId: string) {
-    // Simulate property deletion
-    return { id, deleted: true, sellerId: userId };
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
+    if (!property) {
+      throw new AppError('Property not found', 404);
+    }
+
+    const seller = await this.prisma.seller.findUnique({
+      where: { userId },
+    });
+    if (!seller) {
+      throw new AppError('Seller not found', 404);
+    }
+    if (property.sellerId !== seller.id) {
+      throw new AppError('Unauthorized', 403);
+    }
+
+    const result = await this.prisma.property.delete({
+      where: { id },
+    });
+
+    return successResponse(result, 'Property deleted successfully');
   }
 
   async findBySellerId(sellerId: string) {
-    // Simulate fetching properties by seller
-    return [{ id: 1, sellerId, title: 'Sample Property' }];
+    const properties = await this.prisma.property.findMany({
+      where: { sellerId },
+    });
+
+    return successResponse(properties, 'Properties fetched successfully');
   }
 
   async getSellerPortfolio(userId: string) {
-    // Simulate fetching seller portfolio
-    return { userId, portfolio: [{ id: 1, title: 'Portfolio Property' }] };
+    const profile = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        seller: {
+          include: {
+            property: true,
+          },
+        },
+      },
+    });
+
+    return successResponse(
+      {
+        profile,
+        properties: profile?.seller ? profile.seller.property : [],
+      },
+      'Seller portfolio fetched successfully',
+    );
   }
 
   async findAll(params: {
-    category?: string;
+    category?: PropertyCategory;
     search?: string;
     minPrice?: number;
     maxPrice?: number;
     page?: number;
     limit?: number;
   }) {
-    // Simulate fetching all properties with filters
-    return [{ id: 1, ...params, title: 'Filtered Property' }];
+    const {
+      category,
+      search,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 10,
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    const properties = await this.prisma.property.findMany({
+      skip,
+      take: limit,
+      where: {
+        category,
+        title: {
+          contains: search,
+        },
+        price: {
+          gte: minPrice,
+          lte: maxPrice,
+        },
+      },
+    });
+
+    return successResponse(properties, 'Properties fetched successfully');
   }
 
-  async getTrending(category?: string, limit?: number) {
-    // Simulate fetching trending properties
-    return [{ id: 2, title: 'Trending Property', category }].slice(0, limit);
+  async getTrending(category?: PropertyCategory, limit?: number) {
+    const properties = await this.prisma.property.findMany({
+      where: {
+        ...(category && { category }),
+        createdAt: {
+          gte: subDays(new Date(), 30),
+        },
+      },
+      orderBy: {
+        views: 'desc',
+      },
+      take: limit ?? 10, // default limit if not provided
+    });
+
+    return successResponse(properties, 'Properties fetched successfully');
   }
 
   async findOne(id: string) {
-    // Simulate fetching property details
-    return { id, title: 'Property Details' };
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
+    if (!property) {
+      throw new AppError('Property not found', 404);
+    }
+
+    return successResponse(property, 'Property fetched successfully');
   }
 
-  async saveProperty(body: SavePropertyDto, userId: string) {
-    // Simulate saving a property for a user
-    return { ...body, userId, saved: true };
+  async saveProperty(propertyId: string, userId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+    if (!property) {
+      throw new AppError('Property not found', 404);
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const savedProperty = await this.prisma.propertySaved.create({
+      data: {
+        propertyId: property.id,
+        userId: user.id,
+      },
+    });
+
+    return successResponse(savedProperty, 'Property saved successfully');
   }
 }
