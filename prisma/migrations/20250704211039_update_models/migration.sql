@@ -1,11 +1,17 @@
 -- CreateEnum
-CREATE TYPE "AccountType" AS ENUM ('BUYER', 'SELLER', 'ADMIN');
+CREATE TYPE "AccountType" AS ENUM ('BUYER', 'SELLER', 'ADMIN', 'USER', 'SUPER_ADMIN', 'AGENT');
 
 -- CreateEnum
 CREATE TYPE "SellerVerificationStatus" AS ENUM ('PENDING', 'VERIFIED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "SubscriptionType" AS ENUM ('FREE', 'BASIC', 'PREMIUM');
+
+-- CreateEnum
+CREATE TYPE "NewsCategory" AS ENUM ('GENERAL', 'REAL_ESTATE', 'TECHNOLOGY', 'LIFESTYLE', 'BUSINESS');
+
+-- CreateEnum
+CREATE TYPE "PropertyCategory" AS ENUM ('RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL', 'LAND', 'OTHER');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -15,10 +21,12 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "language" TEXT NOT NULL,
-    "accountType" "AccountType" NOT NULL,
+    "accountType" "AccountType" NOT NULL DEFAULT 'USER',
     "isEmailVerified" BOOLEAN NOT NULL,
     "otpCode" TEXT NOT NULL,
     "otpExpireTime" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -27,9 +35,9 @@ CREATE TABLE "User" (
 CREATE TABLE "Seller" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "verificationStatus" "SellerVerificationStatus" NOT NULL,
+    "verificationStatus" "SellerVerificationStatus" NOT NULL DEFAULT 'PENDING',
     "companyName" TEXT NOT NULL,
-    "subscriptionType" "SubscriptionType",
+    "subscriptionType" "SubscriptionType" NOT NULL DEFAULT 'FREE',
     "companyWebsite" TEXT NOT NULL,
     "phone" INTEGER NOT NULL,
     "address" TEXT NOT NULL,
@@ -37,7 +45,8 @@ CREATE TABLE "Seller" (
     "state" TEXT NOT NULL,
     "city" TEXT NOT NULL,
     "zip" TEXT NOT NULL,
-    "document" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Seller_pkey" PRIMARY KEY ("id")
 );
@@ -48,8 +57,8 @@ CREATE TABLE "Property" (
     "sellerId" TEXT NOT NULL,
     "images" TEXT[],
     "title" TEXT NOT NULL,
-    "category" TEXT NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "category" "PropertyCategory" NOT NULL,
+    "description" TEXT NOT NULL,
     "views" INTEGER NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
     "features" TEXT[],
@@ -57,6 +66,8 @@ CREATE TABLE "Property" (
     "state" TEXT NOT NULL,
     "city" TEXT NOT NULL,
     "zip" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Property_pkey" PRIMARY KEY ("id")
 );
@@ -79,8 +90,8 @@ CREATE TABLE "News" (
     "thumbnail" TEXT NOT NULL,
     "location" TEXT NOT NULL,
     "content" JSONB NOT NULL,
-    "firstPublishedAt" TIMESTAMP(3) NOT NULL,
-    "isPublished" BOOLEAN NOT NULL,
+    "category" "NewsCategory" NOT NULL,
+    "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -95,9 +106,9 @@ CREATE TABLE "Contact" (
     "country" TEXT NOT NULL,
     "phone" INTEGER NOT NULL,
     "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "isRead" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
 );
@@ -106,7 +117,13 @@ CREATE TABLE "Contact" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "idx_user_email" ON "User"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Seller_userId_key" ON "Seller"("userId");
+
+-- CreateIndex
+CREATE INDEX "idx_seller_userId" ON "Seller"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PropertySaved_propertyId_userId_key" ON "PropertySaved"("propertyId", "userId");
@@ -115,7 +132,7 @@ CREATE UNIQUE INDEX "PropertySaved_propertyId_userId_key" ON "PropertySaved"("pr
 ALTER TABLE "Seller" ADD CONSTRAINT "Seller_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Property" ADD CONSTRAINT "Property_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Property" ADD CONSTRAINT "Property_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PropertySaved" ADD CONSTRAINT "PropertySaved_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

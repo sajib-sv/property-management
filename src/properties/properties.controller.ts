@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -16,6 +18,8 @@ import { SavePropertyDto } from './dto/save-property.dto';
 import { JwtAuthGuard, RolesGuard } from '@project/common/jwt/jwt.guard';
 import { GetUser, Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
+import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('properties')
 export class PropertiesController {
@@ -24,11 +28,19 @@ export class PropertiesController {
   @Post('seller')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Seller)
+  @UseInterceptors(FileInterceptor('images', multerMemoryConfig))
   createProperty(
     @Body() createPropertyDto: CreatePropertyDto,
     @GetUser('userId') userId: string,
+    @UploadedFiles() files: Express.Multer.File[] | null = null,
   ) {
-    return this.propertiesService.createProperty(createPropertyDto, userId);
+    const images = files?.map((file) => file.path) || [];
+
+    return this.propertiesService.createProperty(
+      createPropertyDto,
+      userId,
+      images,
+    );
   }
 
   @Patch('seller/:id')

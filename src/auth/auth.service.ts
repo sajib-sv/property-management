@@ -139,7 +139,6 @@ export class AuthService {
       throw new AppError('Image file is required', 400);
     }
 
-    // Create user first
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -149,7 +148,6 @@ export class AuthService {
     }
 
     const hashedPassword = await this.hashPassword(dto.password);
-
     const otpAndExpiry = this.generateOtpAndExpiry();
     const hashedOtp = this.hashOtp(otpAndExpiry.otp);
 
@@ -160,40 +158,43 @@ export class AuthService {
 
     const imageUrl = uploaded.secure_url;
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        name: dto.name,
-        image: imageUrl,
-        language: dto.language,
-        accountType: dto.accountType,
-        isEmailVerified: false,
-        otpCode: hashedOtp,
-        otpExpireTime: otpAndExpiry.expiryTime,
-      },
-    });
+    let user, seller;
 
-    const seller = await this.prisma.seller.create({
-      data: {
-        userId: user.id,
-        verificationStatus: 'PENDING',
-        companyName: dto.companyName,
-        subscriptionType: dto.subscriptionType ?? 'FREE',
-        companyWebsite: dto.companyWebsite,
-        phone: dto.phone,
-        address: dto.address,
-        country: dto.country,
-        state: dto.state,
-        city: dto.city,
-        zip: dto.zip,
-        document: dto.document,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      user = await tx.user.create({
+        data: {
+          email: dto.email,
+          password: hashedPassword,
+          name: dto.name,
+          image: imageUrl,
+          language: dto.language,
+          accountType: dto.accountType,
+          isEmailVerified: false,
+          otpCode: hashedOtp,
+          otpExpireTime: otpAndExpiry.expiryTime,
+        },
+      });
+
+      seller = await tx.seller.create({
+        data: {
+          userId: user.id,
+          verificationStatus: 'PENDING',
+          companyName: dto.companyName,
+          subscriptionType: dto.subscriptionType ?? 'FREE',
+          companyWebsite: dto.companyWebsite,
+          phone: dto.phone,
+          address: dto.address,
+          country: dto.country,
+          state: dto.state,
+          city: dto.city,
+          zip: dto.zip,
+        },
+      });
     });
 
     const mailTemplate = `<p>Your OTP code is: <strong>${otpAndExpiry.otp}</strong></p>`;
     await this.mailService.sendEmail(
-      user.email,
+      user!.email,
       'Email Verification OTP',
       mailTemplate,
     );

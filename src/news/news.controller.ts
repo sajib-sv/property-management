@@ -21,6 +21,7 @@ import { Roles } from '@project/common/jwt/jwt.decorator';
 import { UserEnum } from '@project/common/enum/user.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerMemoryConfig } from '@project/common/utils/multer-config.util';
+import { NewsCategory } from '@prisma/client';
 
 @Controller('news')
 export class NewsController {
@@ -41,7 +42,7 @@ export class NewsController {
 
   @Get()
   findAll(
-    @Query('category') category?: string,
+    @Query('category') category: NewsCategory = NewsCategory.GENERAL,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
@@ -61,7 +62,7 @@ export class NewsController {
   @Get('category/:category')
   @HttpCode(200)
   findByCategory(
-    @Param('category') category: string,
+    @Param('category') category: NewsCategory,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {

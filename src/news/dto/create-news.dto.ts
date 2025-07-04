@@ -1,3 +1,4 @@
+import { NewsCategory } from '@prisma/client';
 import { IsOptional, IsString } from 'class-validator';
 
 export class CreateNewsDto {
@@ -8,7 +9,7 @@ export class CreateNewsDto {
   location: string;
 
   @IsString()
-  category: string;
+  category: NewsCategory;
 
   @IsOptional() // * Marks it as "allowed" to be omitted
   content: any; // * Use 'any' to allow any JSON structure

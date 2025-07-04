@@ -5,9 +5,13 @@ import { SavePropertyDto } from './dto/save-property.dto';
 
 @Injectable()
 export class PropertiesService {
-  async createProperty(createPropertyDto: CreatePropertyDto, userId: string) {
+  async createProperty(
+    createPropertyDto: CreatePropertyDto,
+    userId: string,
+    images: string[] = [],
+  ) {
     // Simulate property creation
-    return { id: Date.now(), ...createPropertyDto, sellerId: userId };
+    return { id: Date.now(), ...createPropertyDto, sellerId: userId, images };
   }
 
   async updateProperty(

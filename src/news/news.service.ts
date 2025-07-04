@@ -11,6 +11,7 @@ import {
 } from '@project/common/utils/response.util';
 import { NewsEntity } from '../common/entity/news.entity';
 import { plainToInstance } from 'class-transformer';
+import { NewsCategory } from '@prisma/client';
 
 @Injectable()
 export class NewsService {
@@ -52,7 +53,11 @@ export class NewsService {
   }
 
   @HandleErrors('Error fetching news')
-  async findAll(params: { category?: string; page: number; limit: number }) {
+  async findAll(params: {
+    category: NewsCategory;
+    page: number;
+    limit: number;
+  }) {
     const { category, page, limit } = params;
     const skip = (page - 1) * limit;
 
@@ -78,10 +83,13 @@ export class NewsService {
       throw new AppError('News not found', 404);
     }
 
-    const suggestedNews = await this.findByCategory(news.category, {
-      page: 1,
-      limit: 3,
-    });
+    const suggestedNews = await this.findByCategory(
+      news.category as NewsCategory,
+      {
+        page: 1,
+        limit: 3,
+      },
+    );
 
     return successResponse(
       {
@@ -93,7 +101,7 @@ export class NewsService {
   }
 
   async findByCategory(
-    category: string,
+    category: NewsCategory,
     options: { page: number; limit: number },
   ) {
     const { page, limit } = options;
