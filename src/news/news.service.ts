@@ -4,23 +4,49 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 
 @Injectable()
 export class NewsService {
-  create(createNewsDto: CreateNewsDto) {
-    return 'This action adds a new news';
+  async create(createNewsDto: CreateNewsDto) {
+    // Implement logic to create a news article
+    return { ...createNewsDto, id: Date.now() };
   }
 
-  findAll() {
-    return `This action returns all news`;
+  async findAll(params: { category?: string; page: number; limit: number }) {
+    // Implement logic to fetch all news with pagination and optional category
+    return [{ id: 1, title: 'Sample News', ...params }];
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} news`;
+  async findOneWithSuggestions(id: string) {
+    // Implement logic to fetch a single news article and suggestions
+    return { id, title: 'Sample News', suggestions: [] };
   }
 
-  update(id: number, updateNewsDto: UpdateNewsDto) {
-    return `This action updates a #${id} news`;
+  async findByCategory(
+    category: string,
+    options: { page: number; limit: number },
+  ) {
+    // Implement logic to fetch news by category with pagination
+    return [{ id: 2, title: 'Category News', category, ...options }];
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} news`;
+  async update(id: string, updateNewsDto: UpdateNewsDto) {
+    // Implement logic to update a news article
+    return { id, ...updateNewsDto };
+  }
+
+  async updateStatus(id: string, isPublished: boolean) {
+    // Implement logic to update the published status of a news article
+    return { id, isPublished };
+  }
+
+  async remove(id: string) {
+    // Implement logic to remove a news article
+    return { id, deleted: true };
+  }
+
+  async getRecent() {
+    // Implement logic to fetch recent news articles
+    return [
+      { id: 3, title: 'Recent News 1' },
+      { id: 4, title: 'Recent News 2' },
+    ];
   }
 }
