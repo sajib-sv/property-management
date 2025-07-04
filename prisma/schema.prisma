@@ -89,6 +89,7 @@ model News {
   thumbnail        String
   location         String
   content          Json
+  category         String
   firstPublishedAt DateTime?
   isPublished      Boolean  @default(false)
 
@@ -125,4 +126,13 @@ enum SubscriptionType {
   FREE
   BASIC
   PREMIUM
+}
+
+
+enum NewsCategory {
+  GENERAL
+  REAL_ESTATE
+  TECHNOLOGY
+  LIFESTYLE
+  BUSINESS
 }

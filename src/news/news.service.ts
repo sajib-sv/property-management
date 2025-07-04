@@ -51,22 +51,64 @@ export class NewsService {
     );
   }
 
+  @HandleErrors('Error fetching news')
   async findAll(params: { category?: string; page: number; limit: number }) {
-    // Implement logic to fetch all news with pagination and optional category
-    return [{ id: 1, title: 'Sample News', ...params }];
+    const { category, page, limit } = params;
+    const skip = (page - 1) * limit;
+
+    const news = await this.prisma.news.findMany({
+      skip,
+      take: limit,
+      where: {
+        category,
+      },
+    });
+
+    return successResponse(
+      plainToInstance(NewsEntity, news),
+      'News fetched successfully',
+    );
   }
 
   async findOneWithSuggestions(id: string) {
-    // Implement logic to fetch a single news article and suggestions
-    return { id, title: 'Sample News', suggestions: [] };
+    const news = await this.prisma.news.findUnique({
+      where: { id },
+    });
+    if (!news) {
+      throw new AppError('News not found', 404);
+    }
+
+    const suggestedNews = await this.findByCategory(news.category, {
+      page: 1,
+      limit: 3,
+    });
+
+    return successResponse(
+      {
+        news,
+        suggestedNews: suggestedNews.data,
+      },
+      'News fetched successfully',
+    );
   }
 
   async findByCategory(
     category: string,
     options: { page: number; limit: number },
   ) {
-    // Implement logic to fetch news by category with pagination
-    return [{ id: 2, title: 'Category News', category, ...options }];
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+
+    const news = await this.prisma.news.findMany({
+      where: { category },
+      skip,
+      take: limit,
+    });
+
+    return successResponse(
+      plainToInstance(NewsEntity, news),
+      'News by category fetched successfully',
+    );
   }
 
   async update(id: string, updateNewsDto: UpdateNewsDto) {
