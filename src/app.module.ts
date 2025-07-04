@@ -9,6 +9,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { NewsModule } from './news/news.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { MailModule } from './mail/mail.module';
+import { PropertiesModule } from './properties/properties.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MailModule } from './mail/mail.module';
     NewsModule,
     ContactsModule,
     MailModule,
+    PropertiesModule,
   ],
   controllers: [AppController],
   providers: [],
