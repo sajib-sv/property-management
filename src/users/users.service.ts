@@ -123,12 +123,15 @@ export class UsersService {
       this.prisma.seller.count(),
     ]);
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-    };
+    return successResponse(
+      {
+        ...data,
+        total,
+        page,
+        limit,
+      },
+      'Sellers fetched successfully',
+    );
   }
 
   @HandleErrors('Failed to fetch seller by ID')
@@ -166,6 +169,14 @@ export class UsersService {
     sellerId: string,
     status: 'VERIFIED' | 'REJECTED' | 'PENDING',
   ) {
+    if (
+      status !== 'VERIFIED' &&
+      status !== 'REJECTED' &&
+      status !== 'PENDING'
+    ) {
+      throw new AppError('Invalid status', 400);
+    }
+
     const seller = await this.prisma.seller.update({
       where: { id: sellerId },
       data: {

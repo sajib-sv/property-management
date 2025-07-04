@@ -72,15 +72,14 @@ export class UsersController {
   // DELETE /admin/seller/:id
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin)
-  @Delete('admin/seller/:id')
+  @Delete('seller/:id')
   deleteSeller(@Param('id') id: string) {
     return this.usersService.deleteSeller(id);
   }
 
-  // PATCH /admin/seller/:id/status
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin)
-  @Patch('admin/seller/:id/status')
+  @Patch('seller/status/:id')
   @HttpCode(200)
   updateSellerStatus(
     @Param('id') id: string,
