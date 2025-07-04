@@ -6,7 +6,6 @@ import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
-import { ResendModule } from './resend/resend.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { ResendModule } from './resend/resend.module';
     }),
     PrismaModule,
     CloudinaryModule,
-    ResendModule,
     UsersModule,
     AuthModule,
   ],

@@ -20,7 +20,6 @@ import { SellerEntity } from '@project/common/entity/seller.entity';
 import { HandleErrors } from '@project/common/error/handle-errors.decorator';
 import { CloudinaryService } from '@project/cloudinary/cloudinary.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { ResendService } from '@project/resend/resend.service';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +28,6 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
-    private resendService: ResendService,
   ) {}
 
   @HandleErrors('Failed to login user')
@@ -110,12 +108,6 @@ export class AuthService {
         otpExpireTime: otpAndExpiry.expiryTime,
       },
     });
-
-    await this.resendService.sendOTPCode(
-      user.email,
-      otpAndExpiry.otp.toString(),
-      'Your OTP Code',
-    );
 
     return successResponse(
       plainToInstance(UserEntity, user),
