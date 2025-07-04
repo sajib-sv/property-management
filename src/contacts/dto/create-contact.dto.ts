@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsNumber, IsString } from 'class-validator';
 
 export class CreateContactDto {
   @IsString()
@@ -12,7 +12,7 @@ export class CreateContactDto {
   message: string;
 
   @Transform(({ value }) => parseInt(value, 10))
-  @IsString()
+  @IsNumber()
   phone: number;
 
   @IsString()

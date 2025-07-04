@@ -9,7 +9,7 @@ import {
   successResponse,
   TResponse,
 } from '@project/common/utils/response.util';
-import { NewsEntity } from './entities/news.entity';
+import { NewsEntity } from '../common/entity/news.entity';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()

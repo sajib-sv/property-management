@@ -38,7 +38,7 @@ export class ContactsController {
     return this.contactsService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('status/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserEnum.Admin, UserEnum.SuperAdmin)
   updateReadStatus(@Param('id') id: string, @Body() isReadDto: IsReadDto) {
