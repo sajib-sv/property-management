@@ -1,29 +1,35 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  IsArray,
-  IsEnum,
-} from 'class-validator';
+import { UploadedFiles } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { PropertyCategory } from '@prisma/client';
+import { IsArray, IsInt, IsString, ValidateNested } from 'class-validator';
+
+export enum PropertyCategory {
+  RESIDENTIAL = 'RESIDENTIAL',
+  COMMERCIAL = 'COMMERCIAL',
+  INDUSTRIAL = 'INDUSTRIAL',
+  LAND = 'LAND',
+  OTHER = 'OTHER',
+}
 
 export class CreatePropertyDto {
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   title: string;
 
-  @IsEnum(PropertyCategory)
+  @ApiProperty({ type: 'string', enum: Object.values(PropertyCategory) })
+  @IsString()
   category: PropertyCategory;
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   description: string;
 
-  @IsNumber()
+  @ApiProperty({ type: 'number' })
+  @IsInt()
   @Type(() => Number)
   price: number;
 
+  @ApiProperty({ type: 'array', items: { type: 'string' } })
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => {
@@ -39,23 +45,34 @@ export class CreatePropertyDto {
   })
   features: string[];
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   address: string;
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   country: string;
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   state: string;
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   city: string;
 
+  @ApiProperty({ type: 'string' })
   @IsString()
-  @IsNotEmpty()
   zip: string;
+
+  // @ApiProperty({
+  //   description: 'Image Datas',
+  //   format: 'binary',
+  //   type: 'array',
+  //   items: {
+  //     type: 'string',
+  //     format: 'file',
+  //   },
+  // })
+  // images: Express.Multer.File[];
 }

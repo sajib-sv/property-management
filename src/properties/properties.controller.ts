@@ -65,11 +65,13 @@ export class PropertiesController {
   @ApiBody({ type: UpdatePropertyDto })
   @ApiParam({ name: 'id', required: true })
   updateProperty(
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles()
+    files: Express.Multer.File[],
     @Param('id') id: string,
     @Body() updatePropertyDto: UpdatePropertyDto,
     @GetUser('userId') userId: string,
   ) {
+    console.log(files);
     return this.propertiesService.updateProperty(
       id,
       updatePropertyDto,
